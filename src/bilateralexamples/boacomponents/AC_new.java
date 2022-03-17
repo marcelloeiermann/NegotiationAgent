@@ -58,7 +58,7 @@ public class AC_new extends AcceptanceStrategy {
         } else {
             a = 1.02;
             b = 0;
-            c = 0.98;
+            c = 0.9;
             t = 0.99;
         }
     }
@@ -86,13 +86,13 @@ public class AC_new extends AcceptanceStrategy {
     public Set<BOAparameter> getParameterSpec() {
 
         Set<BOAparameter> set = new HashSet<BOAparameter>();
-        set.add(new BOAparameter("a", 1.0,
+        set.add(new BOAparameter("a", 1.02,
                 "Accept when the opponent's utility * a + b is greater than the utility of our current bid"));
         set.add(new BOAparameter("b", 0.0,
                 "Accept when the opponent's utility * a + b is greater than the utility of our current bid"));
-        set.add(new BOAparameter("t", 0.0,
+        set.add(new BOAparameter("t", 0.99,
                 "Accept when the passed time of the round is higher or equal to t"));
-        set.add(new BOAparameter("c", 0.0,
+        set.add(new BOAparameter("c", 0.9,
                 "Accept when the opponent's utility is higher than c. (c should be set pretty high)"));
 
         return set;
@@ -100,6 +100,6 @@ public class AC_new extends AcceptanceStrategy {
 
     @Override
     public String getName() {
-        return "AC_new strategy";
+        return "Group4_Acceptance_Strategy";
     }
 }
