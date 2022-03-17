@@ -3,7 +3,7 @@ package bilateralexamples.boacomponents;
 
 import agents.bayesianopponentmodel.BayesianOpponentModel;
 import agents.bayesianopponentmodel.OpponentModelUtilSpace;
-import agents.similarity.Similarity;
+import agents.similarity.SimilarityFunction;
 import genius.core.Bid;
 import genius.core.boaframework.BOAparameter;
 import genius.core.boaframework.NegotiationSession;
@@ -14,10 +14,12 @@ import genius.core.utility.AdditiveUtilitySpace;
 
 import java.util.*;
 
-public class Group5_OM extends OpponentModel {
+public class Group4_OM extends OpponentModel {
     private BayesianOpponentModel model;
     private int startingBidIssue = 0;
     private Set<Bid> offers;
+    private double fWeights[];
+    private ArrayList<SimilarityFunction> fSimilarityFunctions;
 
     public void init(NegotiationSession var1, Map<String, Double> var2) {
         this.negotiationSession = var1;
@@ -75,7 +77,7 @@ public class Group5_OM extends OpponentModel {
     }
 
     public String getName() {
-        return "Group5_OM";
+        return "Group4_OM";
     }
 
     public Set<BOAparameter> getParameterSpec() {
@@ -90,5 +92,20 @@ public class Group5_OM extends OpponentModel {
         }
         List<Bid> sortedList = new ArrayList<>(offers);
         return 0.0;
+    }
+
+    public void similarity(Bid var_1, Bid var_2) {
+
+    }
+
+    public void equivalence_operator() {
+
+    }
+    public final double getSimilarity(Bid pMyBid, Bid pOpponentBid) {
+    double lSimilarity = 0;
+    for (int i = 0; i < fSimilarityFunctions.size(); i++) {
+        lSimilarity += fWeights[i] * fSimilarityFunctions.get(i).getSimilarityValue(pMyBid, pOpponentBid);
+    }
+    return lSimilarity;
     }
 }
