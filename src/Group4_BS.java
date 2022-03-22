@@ -40,6 +40,9 @@ public class Group4_BS extends OfferingStrategy {
     /** Minimum target utility */
     private double minUtility;
 
+    /** Starting offensive utility */
+    private double offensiveUtility;
+
     /** Used to determine whether the agent should be cooperative or not */
     private boolean isOpponentCooperative;
 
@@ -75,6 +78,12 @@ public class Group4_BS extends OfferingStrategy {
         else
             this.minUtility = 0.50;
 
+        // Assign parameters to class
+        if (parameters.get("offensiveUtility") != null)
+            this.offensiveUtility = parameters.get("offensiveUtility");
+        else
+            this.offensiveUtility = 0.90;
+
         this.opponentModel = model;
         this.omStrategy = oms;
 
@@ -98,8 +107,7 @@ public class Group4_BS extends OfferingStrategy {
 
         // TODO:
         // 1. Find whether the model is offensive or cooperative
-        // 2. Check the time if it's close to 90% and apply scare attacks
-        // 3. Try to find an offer that supports both users
+        // 2. Check the time if it's close to 90% and apply scare attacks - DONE
         double time = negotiationSession.getTime();
         double utilityGoal = 1;
 
@@ -134,7 +142,7 @@ public class Group4_BS extends OfferingStrategy {
             if (time >= concedeThreshold) {
                 utilityGoal = p(time);
             } else {
-                utilityGoal = 0.90;
+                utilityGoal = this.offensiveUtility;
             }
         }
 
@@ -156,6 +164,7 @@ public class Group4_BS extends OfferingStrategy {
         Set<BOAparameter> set = new HashSet<BOAparameter>();
         set.add(new BOAparameter("scareThreshold", 0.90, "Scare opponent time threshold"));
         set.add(new BOAparameter("concedeThreshold", 0.90, "Offensive profile concede time threshold"));
+        set.add(new BOAparameter("offensiveUtility", 0.90, "Starting offensive utility"));
         set.add(new BOAparameter("min", 0.50, "Minimum utility"));
         return set;
     }
