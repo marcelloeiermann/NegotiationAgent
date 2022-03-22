@@ -12,6 +12,7 @@ import genius.core.boaframework.BOAparameter;
 import genius.core.boaframework.NegotiationSession;
 import genius.core.boaframework.OMStrategy;
 import genius.core.boaframework.OpponentModel;
+import genius.core.utility.UtilitySpace;
 
 /**
  * This class uses an opponent model to determine the next bid for the opponent,
@@ -80,10 +81,17 @@ public class OMStest extends OMStrategy {
 			if (evaluation > 0.0001) {
 				allWereZero = false;
 			}
-			if (evaluation > bestUtil) {
+			// if (evaluation > bestUtil) {
+			// 	bestBid = bid;
+			// 	bestUtil = evaluation;
+			// }
+			
+			double decisionMetric = decisionMetric(evaluation, evaluation); // Should contain own utility also
+			if(decisionMetric > bestUtil) {
 				bestBid = bid;
-				bestUtil = evaluation;
+				bestUtil = decisionMetric;
 			}
+
 		}
 		// 4. The opponent model did not work, therefore, offer a random bid.
 		if (allWereZero) {
@@ -114,7 +122,13 @@ public class OMStest extends OMStrategy {
 
 	@Override
 	public String getName() {
-//		System.out.println("Print something in getName");
 		return "OMStest";
+	}
+
+	public double decisionMetric(double ownUtility, double opponentUtility) {
+		double weightOwnBid = 0.5;
+		double weightOpponentBid = 0.5;
+		double totalUtility = weightOwnBid * ownUtility + weightOpponentBid * opponentUtility;
+		return totalUtility;
 	}
 }
