@@ -18,8 +18,8 @@ public class Group4_OM extends OpponentModel {
     private BayesianOpponentModel model;
     private int startingBidIssue = 0;
     private Set<Bid> offers;
-    private double fWeights[];
-    private ArrayList<SimilarityFunction> fSimilarityFunctions;
+    private double attribute_weights[];
+
 
     public void init(NegotiationSession var1, Map<String, Double> var2) {
         this.negotiationSession = var1;
@@ -94,18 +94,14 @@ public class Group4_OM extends OpponentModel {
         return 0.0;
     }
 
-    public void similarity(Bid var_1, Bid var_2) {
-
+    public double similarity(Bid bid_1, Bid bid_2) {
+        return bid_1.getDistance(bid_2);
     }
 
-    public void equivalence_operator() {
+    public double equivalence_operator(Bid bid_1, Bid bid_2) {
+        double nrOfIssues = bid_1.getIssues().size();
+        double unequalValues = nrOfIssues - bid_1.countEqualValues(bid_2);
+        return unequalValues/nrOfIssues;
+    }
 
-    }
-    public final double getSimilarity(Bid pMyBid, Bid pOpponentBid) {
-    double lSimilarity = 0;
-    for (int i = 0; i < fSimilarityFunctions.size(); i++) {
-        lSimilarity += fWeights[i] * fSimilarityFunctions.get(i).getSimilarityValue(pMyBid, pOpponentBid);
-    }
-    return lSimilarity;
-    }
 }
