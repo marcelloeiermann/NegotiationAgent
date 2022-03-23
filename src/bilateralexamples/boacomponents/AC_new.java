@@ -75,8 +75,9 @@ public class AC_new extends AcceptanceStrategy {
                 .getMyUndiscountedUtil();
         double lastOpponentBidUtil = negotiationSession.getOpponentBidHistory()
                 .getLastBidDetails().getMyUndiscountedUtil();
-
-        if ((a * lastOpponentBidUtil + b >= nextMyBidUtil) || (negotiationSession.getTime() >= t) || (lastOpponentBidUtil >= c)) {
+        double maxBidUtil =  negotiationSession.getOpponentBidHistory().getBestBidDetails().getMyUndiscountedUtil();
+        //   instead of accepting the first bid after 0.99, accept it only if it is better than X% of opponents total bids
+        if ((a * lastOpponentBidUtil + b >= nextMyBidUtil) || ((negotiationSession.getTime() >= t) && ( lastOpponentBidUtil >= maxBidUtil * 0.7)) || (lastOpponentBidUtil >= c)) {
             return Actions.Accept;
         }
         return Actions.Reject;
