@@ -12,6 +12,7 @@ import genius.core.boaframework.BOAparameter;
 import genius.core.boaframework.NegotiationSession;
 import genius.core.boaframework.OMStrategy;
 import genius.core.boaframework.OpponentModel;
+import genius.core.boaframework.SortedOutcomeSpace;
 import genius.core.utility.UtilitySpace;
 
 /**
@@ -27,6 +28,9 @@ public class OMStest extends OMStrategy {
 	 * exactly one as a match sometimes lasts slightly longer.
 	 */
 	double updateThreshold = 1.1;
+
+	private double ownWeight;
+	private double opponentWeight;
 
 	/**
 	 * Initializes the opponent model strategy. If a value for the parameter t
@@ -48,6 +52,16 @@ public class OMStest extends OMStrategy {
 			updateThreshold = parameters.get("t").doubleValue();
 		} else {
 			System.out.println("OMStrategy assumed t = 1.1");
+		}
+		if (parameters.get("ownWeight") != null) {
+			this.ownWeight = parameters.get("ownWeight").doubleValue();
+		} else {
+			this.ownWeight = 0.5;
+		}
+		if (parameters.get("opponentWeight") != null) {
+			this.opponentWeight = parameters.get("opponentWeight").doubleValue();
+		} else {
+			this.opponentWeight = 0.5;
 		}
 	}
 
@@ -77,8 +91,9 @@ public class OMStest extends OMStrategy {
 		boolean allWereZero = true;
 		// 3. Determine the best bid
 		for (BidDetails bid : allBids) {
-			double evaluation = model.getBidEvaluation(bid.getBid());
-			if (evaluation > 0.0001) {
+			double utilityOpponent = model.getBidEvaluation(bid.getBid());
+			double utiityAgent = bid.getMyUndiscountedUtil();
+			if (utilityOpponent > 0.0001) {
 				allWereZero = false;
 			}
 			// if (evaluation > bestUtil) {
@@ -86,7 +101,7 @@ public class OMStest extends OMStrategy {
 			// 	bestUtil = evaluation;
 			// }
 			
-			double decisionMetric = decisionMetric(evaluation, evaluation); // Should contain own utility also
+			double decisionMetric = decisionMetric(utiityAgent, utilityOpponent); // Should contain own utility also
 			if(decisionMetric > bestUtil) {
 				bestBid = bid;
 				bestUtil = decisionMetric;
@@ -100,6 +115,47 @@ public class OMStest extends OMStrategy {
 		}
 		return bestBid;
 	}
+
+	// @Override
+	// public BidDetails getBid(SortedOutcomeSpace space, double targetUtility) {
+	// 	Range range = new Range(targetUtility, targetUtility + INITIAL_WINDOW_RANGE);
+	// 	List<BidDetails> allBids = space.getBidsinRange(range);
+	// 	// 1. If there is only a single bid, return this bid
+	// 	if (allBids.size() == 1) {
+	// 		return allBids.get(0);
+	// 	}
+	// 	double bestUtil = -1;
+	// 	BidDetails bestBid = allBids.get(0);
+
+	// 	// 2. Check that not all bids are assigned at utility of 0
+	// 	// to ensure that the opponent model works. If the opponent model
+	// 	// does not work, offer a random bid.
+	// 	boolean allWereZero = true;
+	// 	// 3. Determine the best bid
+	// 	for (BidDetails bid : allBids) {
+	// 		double evaluation = model.getBidEvaluation(bid.getBid());
+	// 		if (evaluation > 0.0001) {
+	// 			allWereZero = false;
+	// 		}
+	// 		// if (evaluation > bestUtil) {
+	// 		// 	bestBid = bid;
+	// 		// 	bestUtil = evaluation;
+	// 		// }
+			
+	// 		double decisionMetric = decisionMetric(evaluation, evaluation); // Should contain own utility also
+	// 		if(decisionMetric > bestUtil) {
+	// 			bestBid = bid;
+	// 			bestUtil = decisionMetric;
+	// 		}
+
+	// 	}
+	// 	// 4. The opponent model did not work, therefore, offer a random bid.
+	// 	if (allWereZero) {
+	// 		Random r = new Random();
+	// 		return allBids.get(r.nextInt(allBids.size()));
+	// 	}
+	// 	return bestBid;
+	// }
 
 	/**
 	 * The opponent model may be updated, unless the time is higher than a given
@@ -117,6 +173,8 @@ public class OMStest extends OMStrategy {
 	public Set<BOAparameter> getParameterSpec() {
 		Set<BOAparameter> set = new HashSet<BOAparameter>();
 		set.add(new BOAparameter("t", 1.1, "Time after which the OM should not be updated"));
+		set.add(new BOAparameter("ownWeight", 0.7 , "Weight of the agent's own utility"));
+		set.add(new BOAparameter("opponentWeight", 0.3 , "Weight of the opponent's utility"));
 		return set;
 	}
 
@@ -125,10 +183,11 @@ public class OMStest extends OMStrategy {
 		return "OMStest";
 	}
 
+
 	public double decisionMetric(double ownUtility, double opponentUtility) {
-		double weightOwnBid = 0.5;
-		double weightOpponentBid = 0.5;
-		double totalUtility = weightOwnBid * ownUtility + weightOpponentBid * opponentUtility;
+		// double weightOwnBid = 0.5;
+		// double weightOpponentBid = 0.5;
+		double totalUtility = this.ownWeight * ownUtility + this.opponentWeight * opponentUtility;
 		return totalUtility;
 	}
 }
