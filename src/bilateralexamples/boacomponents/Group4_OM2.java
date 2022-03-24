@@ -10,11 +10,8 @@ import genius.core.utility.AdditiveUtilitySpace;
 import genius.core.utility.Evaluator;
 import genius.core.utility.EvaluatorDiscrete;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * BOA framework implementation of the HardHeaded Frequecy Model.
@@ -38,10 +35,11 @@ public class Group4_OM2 extends OpponentModel {
 	private int learnValueAddition;
 	private int amountOfIssues;
 	private double goldenValue;
+	private int amountOfBids;
+	private List<Bid> offers;
 
 	@Override
-	public void init(NegotiationSession negotiationSession,
-			Map<String, Double> parameters) {
+	public void init(NegotiationSession negotiationSession, Map<String, Double> parameters) {
 		this.negotiationSession = negotiationSession;
 		if (parameters != null && parameters.get("l") != null) {
 			learnCoef = parameters.get("l");
@@ -49,8 +47,7 @@ public class Group4_OM2 extends OpponentModel {
 			learnCoef = 0.2;
 		}
 		learnValueAddition = 1;
-		opponentUtilitySpace = (AdditiveUtilitySpace) negotiationSession
-				.getUtilitySpace().copy();
+		opponentUtilitySpace = (AdditiveUtilitySpace) negotiationSession.getUtilitySpace().copy();
 		amountOfIssues = opponentUtilitySpace.getDomain().getIssues().size();
 		/*
 		 * This is the value to be added to weights of unchanged issues before
@@ -58,6 +55,7 @@ public class Group4_OM2 extends OpponentModel {
 		 * weight, (therefore defining the maximum possible also).
 		 */
 		goldenValue = learnCoef / amountOfIssues;
+		amountOfBids = 0;
 
 		initializeModel();
 
@@ -65,6 +63,7 @@ public class Group4_OM2 extends OpponentModel {
 
 	@Override
 	public void updateModel(Bid opponentBid, double time) {
+		offers.add(opponentBid);
 		if (negotiationSession.getOpponentBidHistory().size() < 2) {
 			return;
 		}
@@ -75,8 +74,7 @@ public class Group4_OM2 extends OpponentModel {
 		BidDetails prevOppBid = negotiationSession.getOpponentBidHistory()
 				.getHistory()
 				.get(negotiationSession.getOpponentBidHistory().size() - 2);
-		HashMap<Integer, Integer> lastDiffSet = determineDifference(prevOppBid,
-				oppBid);
+		HashMap<Integer, Integer> lastDiffSet = determineDifference(prevOppBid, oppBid);
 
 		// count the number of changes in value
 		for (Integer i : lastDiffSet.keySet()) {
@@ -91,8 +89,7 @@ public class Group4_OM2 extends OpponentModel {
 
 		// re-weighing issues while making sure that the sum remains 1
 		for (Integer i : lastDiffSet.keySet()) {
-			Objective issue = opponentUtilitySpace.getDomain()
-					.getObjectivesRoot().getObjective(i);
+			Objective issue = opponentUtilitySpace.getDomain().getObjectivesRoot().getObjective(i);
 			double weight = opponentUtilitySpace.getWeight(i);
 			double newWeight;
 
@@ -107,29 +104,28 @@ public class Group4_OM2 extends OpponentModel {
 		// Then for each issue value that has been offered last time, a constant
 		// value is added to its corresponding ValueDiscrete.
 		try {
-			for (Entry<Objective, Evaluator> e : opponentUtilitySpace
-					.getEvaluators()) {
+			for (Entry<Objective, Evaluator> e : opponentUtilitySpace.getEvaluators()) {
 				EvaluatorDiscrete value = (EvaluatorDiscrete) e.getValue();
 				IssueDiscrete issue = ((IssueDiscrete) e.getKey());
 				/*
 				 * add constant learnValueAddition to the current preference of
 				 * the value to make it more important
 				 */
-				ValueDiscrete issuevalue = (ValueDiscrete) oppBid.getBid()
-						.getValue(issue.getNumber());
+				ValueDiscrete issuevalue = (ValueDiscrete) oppBid.getBid().getValue(issue.getNumber());
 				Integer eval = value.getEvaluationNotNormalized(issuevalue);
 				value.setEvaluation(issuevalue, (learnValueAddition + eval));
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
+		amountOfBids += 1;
 	}
 
 	@Override
 	public double getBidEvaluation(Bid bid) {
 		double result = 0;
 		try {
-			result = opponentUtilitySpace.getUtility(bid);
+			result = (opponentUtilitySpace.getUtility(bid) + getTimeUtility(bid)) / 2;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -144,8 +140,7 @@ public class Group4_OM2 extends OpponentModel {
 	@Override
 	public Set<BOAparameter> getParameterSpec() {
 		Set<BOAparameter> set = new HashSet<BOAparameter>();
-		set.add(new BOAparameter("l", 0.2,
-				"The learning coefficient determines how quickly the issue weights are learned"));
+		set.add(new BOAparameter("l", 0.2, "The learning coefficient determines how quickly the issue weights are learned"));
 		return set;
 	}
 
@@ -198,6 +193,24 @@ public class Group4_OM2 extends OpponentModel {
 		}
 
 		return diff;
+	}
+
+	private double getTimeUtility(Bid bid_1) {
+		List<Double> w = new ArrayList<>();
+		double closest_value = -1;
+		int closest_index = 0;
+		if (!offers.isEmpty()) {
+			for (int i = 0; i < offers.size(); i++) {
+				Bid bid_2 = offers.get(i);
+				double distance = bid_1.getDistance(bid_2);
+				if (distance < closest_value || closest_value == -1){
+					closest_index = i;
+					closest_value = distance;
+				}
+			}
+			return closest_index / offers.size();
+		}
+		return 0.0;
 	}
 
 }

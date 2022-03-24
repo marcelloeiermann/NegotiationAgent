@@ -21,9 +21,9 @@ public class Group4_OM extends OpponentModel {
     private double attribute_weights[];
 
 
-    public void init(NegotiationSession var1, Map<String, Double> var2) {
-        this.negotiationSession = var1;
-        this.model = new BayesianOpponentModel((AdditiveUtilitySpace)var1.getUtilitySpace());
+    public void init(NegotiationSession session, Map<String, Double> var2) {
+        this.negotiationSession = session;
+        this.model = new BayesianOpponentModel((AdditiveUtilitySpace)session.getUtilitySpace());
         if (var2.get("m") != null) {
             this.model.setMostProbableUSHypsOnly((Double)var2.get("m") > 0.0D);
         } else {
@@ -31,7 +31,7 @@ public class Group4_OM extends OpponentModel {
             System.out.println("Constant \"m\" was not set. Assumed default value.");
         }
 
-        while(!this.testIndexOfFirstIssue(var1.getUtilitySpace().getDomain().getRandomBid((Random)null), this.startingBidIssue)) {
+        while(!this.testIndexOfFirstIssue(session.getUtilitySpace().getDomain().getRandomBid((Random)null), this.startingBidIssue)) {
             ++this.startingBidIssue;
         }
 
@@ -46,18 +46,18 @@ public class Group4_OM extends OpponentModel {
         }
     }
 
-    public void updateModel(Bid var1, double var2) {
+    public void updateModel(Bid bid_1, double time) {
         try {
-            this.model.updateBeliefs(var1);
+            this.model.updateBeliefs(bid_1);
         } catch (Exception var5) {
             var5.printStackTrace();
         }
 
     }
 
-    public double getBidEvaluation(Bid var1) {
+    public double getBidEvaluation(Bid bid_1) {
         try {
-            return this.model.getNormalizedUtility(var1);
+            return this.model.getNormalizedUtility(bid_1);
         } catch (Exception var3) {
             var3.printStackTrace();
             return 0.0D;
