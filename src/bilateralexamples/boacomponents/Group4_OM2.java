@@ -36,7 +36,7 @@ public class Group4_OM2 extends OpponentModel {
 	private int amountOfIssues;
 	private double goldenValue;
 	private int amountOfBids;
-	private List<Bid> offers;
+	private List<Bid> offers = new ArrayList<>();
 
 	@Override
 	public void init(NegotiationSession negotiationSession, Map<String, Double> parameters) {
