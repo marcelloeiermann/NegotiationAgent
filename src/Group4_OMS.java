@@ -21,7 +21,7 @@ import genius.core.utility.UtilitySpace;
  * used to select the best bid.
  * 
  */
-public class OMStest extends OMStrategy {
+public class Group4_OMS extends OMStrategy {
 
 	/**
 	 * when to stop updating the opponentmodel. Note that this value is not
@@ -56,12 +56,12 @@ public class OMStest extends OMStrategy {
 		if (parameters.get("ownWeight") != null) {
 			this.ownWeight = parameters.get("ownWeight").doubleValue();
 		} else {
-			this.ownWeight = 0.5;
+			this.ownWeight = 0.7;
 		}
 		if (parameters.get("opponentWeight") != null) {
 			this.opponentWeight = parameters.get("opponentWeight").doubleValue();
 		} else {
-			this.opponentWeight = 0.5;
+			this.opponentWeight = 0.3;
 		}
 	}
 
@@ -76,8 +76,6 @@ public class OMStest extends OMStrategy {
 	@Override
 	public BidDetails getBid(List<BidDetails> allBids) {
 
-		System.out.println("JOEEEHOEEEEEEEEE");
-		System.out.println("Werkt dit?");
 		// 1. If there is only a single bid, return this bid
 		if (allBids.size() == 1) {
 			return allBids.get(0);
@@ -89,24 +87,18 @@ public class OMStest extends OMStrategy {
 		// to ensure that the opponent model works. If the opponent model
 		// does not work, offer a random bid.
 		boolean allWereZero = true;
-		// 3. Determine the best bid
+		// 3. Determine the best bid on the basis of the decision metric
 		for (BidDetails bid : allBids) {
 			double utilityOpponent = model.getBidEvaluation(bid.getBid());
 			double utiityAgent = bid.getMyUndiscountedUtil();
 			if (utilityOpponent > 0.0001) {
 				allWereZero = false;
 			}
-			// if (evaluation > bestUtil) {
-			// 	bestBid = bid;
-			// 	bestUtil = evaluation;
-			// }
-			
-			double decisionMetric = decisionMetric(utiityAgent, utilityOpponent); // Should contain own utility also
-			if(decisionMetric > bestUtil) {
+			double decisionMetricValue = decisionMetric(utiityAgent, utilityOpponent);
+			if(decisionMetricValue > bestUtil) {
 				bestBid = bid;
-				bestUtil = decisionMetric;
+				bestUtil = decisionMetricValue;
 			}
-
 		}
 		// 4. The opponent model did not work, therefore, offer a random bid.
 		if (allWereZero) {
@@ -116,47 +108,6 @@ public class OMStest extends OMStrategy {
 		return bestBid;
 	}
 
-	// @Override
-	// public BidDetails getBid(SortedOutcomeSpace space, double targetUtility) {
-	// 	Range range = new Range(targetUtility, targetUtility + INITIAL_WINDOW_RANGE);
-	// 	List<BidDetails> allBids = space.getBidsinRange(range);
-	// 	// 1. If there is only a single bid, return this bid
-	// 	if (allBids.size() == 1) {
-	// 		return allBids.get(0);
-	// 	}
-	// 	double bestUtil = -1;
-	// 	BidDetails bestBid = allBids.get(0);
-
-	// 	// 2. Check that not all bids are assigned at utility of 0
-	// 	// to ensure that the opponent model works. If the opponent model
-	// 	// does not work, offer a random bid.
-	// 	boolean allWereZero = true;
-	// 	// 3. Determine the best bid
-	// 	for (BidDetails bid : allBids) {
-	// 		double evaluation = model.getBidEvaluation(bid.getBid());
-	// 		if (evaluation > 0.0001) {
-	// 			allWereZero = false;
-	// 		}
-	// 		// if (evaluation > bestUtil) {
-	// 		// 	bestBid = bid;
-	// 		// 	bestUtil = evaluation;
-	// 		// }
-			
-	// 		double decisionMetric = decisionMetric(evaluation, evaluation); // Should contain own utility also
-	// 		if(decisionMetric > bestUtil) {
-	// 			bestBid = bid;
-	// 			bestUtil = decisionMetric;
-	// 		}
-
-	// 	}
-	// 	// 4. The opponent model did not work, therefore, offer a random bid.
-	// 	if (allWereZero) {
-	// 		Random r = new Random();
-	// 		return allBids.get(r.nextInt(allBids.size()));
-	// 	}
-	// 	return bestBid;
-	// }
-
 	/**
 	 * The opponent model may be updated, unless the time is higher than a given
 	 * constant.
@@ -165,7 +116,6 @@ public class OMStest extends OMStrategy {
 	 */
 	@Override
 	public boolean canUpdateOM() {
-		System.out.println("Time is " + negotiationSession.getTime());
 		return negotiationSession.getTime() < updateThreshold;
 	}
 
@@ -180,14 +130,18 @@ public class OMStest extends OMStrategy {
 
 	@Override
 	public String getName() {
-		return "OMStest";
+		return "Group4 - Opponent Model Strategy";
 	}
 
-
+	/**
+	 * Calculate the value of the decision metric given the utilities of the agent and the opponent.
+	 * @param ownUtility
+	 * 			The value of the utility of the agent.
+	 * @param opponentUtility
+	 * 			The value of the utility of the opponent.
+	 * @return  The value of the decision metric.
+	 */
 	public double decisionMetric(double ownUtility, double opponentUtility) {
-		// double weightOwnBid = 0.5;
-		// double weightOpponentBid = 0.5;
-		double totalUtility = this.ownWeight * ownUtility + this.opponentWeight * opponentUtility;
-		return totalUtility;
+		return (double)(this.ownWeight * ownUtility + this.opponentWeight * opponentUtility) / (this.ownWeight + this.opponentWeight);
 	}
 }
