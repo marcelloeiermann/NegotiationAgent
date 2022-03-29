@@ -1,3 +1,4 @@
+import java.security.acl.Group;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -43,9 +44,6 @@ public class Group4_BS extends OfferingStrategy {
     /** Starting offensive utility */
     private double offensiveUtility;
 
-    /** Used to determine whether the agent should be cooperative or not */
-    private boolean isOpponentCooperative;
-
     /**
      * Method which initializes the agent by setting all parameters.
      */
@@ -86,9 +84,28 @@ public class Group4_BS extends OfferingStrategy {
 
         this.opponentModel = model;
         this.omStrategy = oms;
+    }
 
-        // TODO: Need to find a way to calculate this
-        this.isOpponentCooperative = false;
+    /**
+     * The function checks whether the opponent is cooperative or not
+     * In order to support all types of OpponentModel classes, the function
+     * makes sure to check whether the opponent modeling catches this information.
+     * In case the opponent modelling does not support this functionality, the profile is set to be offensive
+     * @return
+     */
+    private boolean isOpponentCooperative()
+    {
+        try {
+
+            // Checks whether the opponent modeling supports this feature
+            if (opponentModel instanceof Group4_OM) {
+                return ((Group4_OM)opponentModel).getOpponentCooperative();
+            }
+        } catch (Exception e) {
+            return false;
+        }
+
+        return false;
     }
 
     @Override
@@ -112,7 +129,9 @@ public class Group4_BS extends OfferingStrategy {
         double utilityGoal = 1;
 
         // What is the agent's profile?
-        if (isOpponentCooperative) {
+
+
+        if (isOpponentCooperative()) {
 
             /**
              * Cooperative Profile
@@ -130,7 +149,6 @@ public class Group4_BS extends OfferingStrategy {
 
             // Step 1: Check whether the agent should scare the opponent
             if (time >= scareThreshold) {
-                System.out.println("Scare opponent!");
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
