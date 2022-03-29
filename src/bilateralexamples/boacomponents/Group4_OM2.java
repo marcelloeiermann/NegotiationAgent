@@ -35,8 +35,8 @@ public class Group4_OM2 extends OpponentModel {
 	private int learnValueAddition;
 	private int amountOfIssues;
 	private double goldenValue;
-	private int amountOfBids;
-	private List<Bid> offers = new ArrayList<>();
+	private boolean isOpponentCooperative;
+	private List<Bid> offers;
 
 	@Override
 	public void init(NegotiationSession negotiationSession, Map<String, Double> parameters) {
@@ -55,10 +55,11 @@ public class Group4_OM2 extends OpponentModel {
 		 * weight, (therefore defining the maximum possible also).
 		 */
 		goldenValue = learnCoef / amountOfIssues;
-		amountOfBids = 0;
+
+		isOpponentCooperative = true;
+		this.offers = new ArrayList<>();
 
 		initializeModel();
-
 	}
 
 	@Override
@@ -118,7 +119,7 @@ public class Group4_OM2 extends OpponentModel {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		amountOfBids += 1;
+		determineCooperative(4);
 	}
 
 	@Override
@@ -172,9 +173,9 @@ public class Group4_OM2 extends OpponentModel {
 	 * if the value changed. If this is the case, a 1 is stored in a hashmap for
 	 * that issue, else a 0.
 	 * 
-	 * @param a
+	 * @param first
 	 *            bid of the opponent
-	 * @param another
+	 * @param second
 	 *            bid
 	 * @return
 	 */
@@ -194,11 +195,13 @@ public class Group4_OM2 extends OpponentModel {
 
 		return diff;
 	}
-
+	/**
+	 * Determines the most similar previous bid and how recent that one was made.
+	 * Based on the recency it returns a value between 0 and 1 for the time utility.
+	 */
 	private double getTimeUtility(Bid bid_1) {
-		List<Double> w = new ArrayList<>();
 		double closest_value = -1;
-		int closest_index = 0;
+		double closest_index = 0;
 		if (!offers.isEmpty()) {
 			for (int i = 0; i < offers.size(); i++) {
 				Bid bid_2 = offers.get(i);
@@ -208,9 +211,44 @@ public class Group4_OM2 extends OpponentModel {
 					closest_value = distance;
 				}
 			}
-			return closest_index / offers.size();
+			return 1.0 - closest_index / offers.size();
 		}
-		return 0.0;
+		return 1.0;
 	}
 
+	private void determineCooperative(int noMoves) {
+
+		// If the opponent is found at least once to be offensive, then it will always be concidered as offensive.
+		if(!isOpponentCooperative) {
+			return;
+		}
+
+		List<BidDetails> offerHist = negotiationSession.getOpponentBidHistory().getHistory();
+		isOpponentCooperative = true;
+		if (offerHist.size() > noMoves) {
+			for (int i = offerHist.size()-noMoves; i < offerHist.size(); i++) {
+				if (offerHist.get(i-1).getMyUndiscountedUtil() != offerHist.get(i).getMyUndiscountedUtil() && !offerHist.get(i-1).getBid().equals(offerHist.get(i).getBid())){
+					isOpponentCooperative = false;
+					break;
+				}
+			}
+		}
+	}
+
+	public boolean getOpponentCooperative() { return isOpponentCooperative; }
+
+	private double getIssueTimeUtility(Issue issue) {
+		if (!offers.isEmpty()) {
+			for (Bid bid_2 : offers) {
+				bid_2.getValue(issue);
+			}
+			for (Bid bid_2 : offers) {
+				Value value1 = bid_2.getValue(issue);
+				Value value2 = bid_2.getValue(issue);
+				value1.equals(value2);
+			}
+		}
+
+		return 0;
+	}
 }
