@@ -90,10 +90,10 @@ public class Group4_OMS extends OMStrategy {
 		// 3. Determine the best bid on the basis of the decision metric
 		for (BidDetails bid : allBids) {
 			double utilityOpponent = model.getBidEvaluation(bid.getBid());
-			double utiityAgent = bid.getMyUndiscountedUtil();
 			if (utilityOpponent > 0.0001) {
 				allWereZero = false;
 			}
+			double utiityAgent = bid.getMyUndiscountedUtil();
 			double decisionMetricValue = decisionMetric(utiityAgent, utilityOpponent);
 			if(decisionMetricValue > bestUtil) {
 				bestBid = bid;
