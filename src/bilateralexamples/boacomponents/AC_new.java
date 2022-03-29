@@ -58,7 +58,7 @@ public class AC_new extends AcceptanceStrategy {
         } else {
             a = 1.02;
             b = 0;
-            c = 0.9;
+            c = 0.95;
             t = 0.99;
         }
     }
@@ -77,7 +77,7 @@ public class AC_new extends AcceptanceStrategy {
                 .getLastBidDetails().getMyUndiscountedUtil();
         double maxBidUtil =  negotiationSession.getOpponentBidHistory().getBestBidDetails().getMyUndiscountedUtil();
         //   instead of accepting the first bid after 0.99, accept it only if it is better than X% of opponents total bids
-        if ((a * lastOpponentBidUtil + b >= nextMyBidUtil) || ((negotiationSession.getTime() >= t) && ( lastOpponentBidUtil >= maxBidUtil * 0.7)) || (lastOpponentBidUtil >= c)) {
+        if ((a * lastOpponentBidUtil + b >= nextMyBidUtil) || ((negotiationSession.getTime() >= t) && ( lastOpponentBidUtil >= maxBidUtil * 0.9)) || (lastOpponentBidUtil >= c)) {
             return Actions.Accept;
         }
         return Actions.Reject;
@@ -93,7 +93,7 @@ public class AC_new extends AcceptanceStrategy {
                 "Accept when the opponent's utility * a + b is greater than the utility of our current bid"));
         set.add(new BOAparameter("t", 0.99,
                 "Accept when the passed time of the round is higher or equal to t"));
-        set.add(new BOAparameter("c", 0.9,
+        set.add(new BOAparameter("c", 0.95,
                 "Accept when the opponent's utility is higher than c. (c should be set pretty high)"));
 
         return set;
@@ -101,6 +101,6 @@ public class AC_new extends AcceptanceStrategy {
 
     @Override
     public String getName() {
-        return "Group4_Acceptance_Strategy";
+        return "Group4_Acceptance_Strategy_v4";
     }
 }
