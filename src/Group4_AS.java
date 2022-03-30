@@ -1,15 +1,8 @@
-package bilateralexamples.boacomponents;
+import genius.core.boaframework.*;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import genius.core.boaframework.AcceptanceStrategy;
-import genius.core.boaframework.Actions;
-import genius.core.boaframework.BOAparameter;
-import genius.core.boaframework.NegotiationSession;
-import genius.core.boaframework.OfferingStrategy;
-import genius.core.boaframework.OpponentModel;
 
 /**
  * This Acceptance Condition will accept an opponent bid if the utility is
@@ -19,7 +12,7 @@ import genius.core.boaframework.OpponentModel;
  * T. Baarslag, K. Hindriks, M. Hendrikx, A. Dirkzwager, C.M. Jonker
  *
  */
-public class AC_new extends AcceptanceStrategy {
+public class Group4_AS extends AcceptanceStrategy {
 
     private double a;
     private double b;
@@ -29,11 +22,11 @@ public class AC_new extends AcceptanceStrategy {
     /**
      * Empty constructor for the BOA framework.
      */
-    public AC_new() {
+    public Group4_AS() {
     }
 
-    public AC_new(NegotiationSession negoSession, OfferingStrategy strat,
-                   double alpha, double beta, double c, double tau) {
+    public Group4_AS(NegotiationSession negoSession, OfferingStrategy strat,
+                     double alpha, double beta, double c, double tau) {
         this.negotiationSession = negoSession;
         this.offeringStrategy = strat;
         this.a = alpha;
@@ -107,6 +100,6 @@ public class AC_new extends AcceptanceStrategy {
 
     @Override
     public String getName() {
-        return "Group4_Acceptance_Strategy_v5";
+        return "Group4_Acceptance_Strategy_v6";
     }
 }
