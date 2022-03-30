@@ -122,7 +122,7 @@ public class Group4_OMS extends OMStrategy {
 	@Override
 	public Set<BOAparameter> getParameterSpec() {
 		Set<BOAparameter> set = new HashSet<BOAparameter>();
-		set.add(new BOAparameter("t", 1.1, "Time after which the OM should not be updated"));
+		set.add(new BOAparameter("t", 1.1 , "Time after which the OM should not be updated"));
 		set.add(new BOAparameter("ownWeight", 0.7 , "Weight of the agent's own utility"));
 		set.add(new BOAparameter("opponentWeight", 0.3 , "Weight of the opponent's utility"));
 		return set;
