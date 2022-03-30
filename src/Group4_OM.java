@@ -35,14 +35,24 @@ public class Group4_OM extends OpponentModel {
 	private double goldenValue;
 	private boolean isOpponentCooperative;
 	private List<Bid> offers;
+	private List<Issue> issues;
+	private double profileDeterminationMoves;
 
 	@Override
 	public void init(NegotiationSession negotiationSession, Map<String, Double> parameters) {
 		this.negotiationSession = negotiationSession;
-		if (parameters != null && parameters.get("l") != null) {
-			learnCoef = parameters.get("l");
-		} else {
-			learnCoef = 0.2;
+		// Assign parameters to class
+		if (parameters != null) {
+			if (parameters.get("l") != null) {
+				learnCoef = parameters.get("l");
+			} else {
+				learnCoef = 0.2;
+			}
+			if (parameters.get("m") != null) {
+				profileDeterminationMoves = parameters.get("m");
+			} else {
+				profileDeterminationMoves = 4.0;
+			}
 		}
 		learnValueAddition = 1;
 		opponentUtilitySpace = (AdditiveUtilitySpace) negotiationSession.getUtilitySpace().copy();
@@ -55,7 +65,8 @@ public class Group4_OM extends OpponentModel {
 		goldenValue = learnCoef / amountOfIssues;
 
 		isOpponentCooperative = true;
-		this.offers = new ArrayList<>();
+		offers = new ArrayList<>();
+		issues = opponentUtilitySpace.getDomain().getIssues();
 
 		initializeModel();
 	}
@@ -117,14 +128,18 @@ public class Group4_OM extends OpponentModel {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		determineCooperative(4);
+		determineCooperative(profileDeterminationMoves);
 	}
 
 	@Override
 	public double getBidEvaluation(Bid bid) {
 		double result = 0;
 		try {
-			result = (opponentUtilitySpace.getUtility(bid) + getTimeUtility(bid)) / 2;
+			// Combine the frequency utility with the time utility
+			double freqUtil = opponentUtilitySpace.getUtility(bid);
+			double issueUtil = getIssueTimeUtility(bid);
+			System.out.println(offers.size() + " " + freqUtil + " " + issueUtil);
+			result = (freqUtil + issueUtil) / 2;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -133,14 +148,14 @@ public class Group4_OM extends OpponentModel {
 
 	@Override
 	public String getName() {
-		return "Group4_OM2";
+		return "Group4 - Opponent Model";
 	}
 
 	@Override
 	public Set<BOAparameter> getParameterSpec() {
 		Set<BOAparameter> set = new HashSet<BOAparameter>();
 		set.add(new BOAparameter("l", 0.2, "The learning coefficient determines how quickly the issue weights are learned"));
-		set.add(new BOAparameter("profileDeterminationMoves", 4.0, "Checks after how many non-conceding opponent moves the modeler should consider the opponent as non-cooperative"));
+		set.add(new BOAparameter("m", 4.0, "Checks after how many non-conceding opponent moves the modeler should consider the opponent as non-cooperative"));
 		return set;
 	}
 
@@ -194,6 +209,7 @@ public class Group4_OM extends OpponentModel {
 
 		return diff;
 	}
+
 	/**
 	 * Determines the most similar previous bid and how recent that one was made.
 	 * Based on the recency it returns a value between 0 and 1 for the time utility.
@@ -202,10 +218,10 @@ public class Group4_OM extends OpponentModel {
 		double closest_value = -1;
 		double closest_index = 0;
 		if (!offers.isEmpty()) {
-			for (int i = 0; i < offers.size(); i++) {
+			for (int i = offers.size() - 1; i > 0; i--) {
 				Bid bid_2 = offers.get(i);
 				double distance = bid_1.getDistance(bid_2);
-				if (distance < closest_value || closest_value == -1){
+				if (distance < closest_value || closest_value == -1) {
 					closest_index = i;
 					closest_value = distance;
 				}
@@ -215,17 +231,18 @@ public class Group4_OM extends OpponentModel {
 		return 1.0;
 	}
 
-	private void determineCooperative(int noMoves) {
-
-		// If the opponent is found at least once to be offensive, then it will always be concidered as offensive.
+	/**
+	 * Determines is the opponent is playing cooperative based on the amount of repeat offers.
+	 */
+	private void determineCooperative(double noMoves) {
+		// If the opponent is found at least once to be offensive, then it will always be considered as offensive.
 		if(!isOpponentCooperative) {
 			return;
 		}
-
 		List<BidDetails> offerHist = negotiationSession.getOpponentBidHistory().getHistory();
 		isOpponentCooperative = true;
 		if (offerHist.size() > noMoves) {
-			for (int i = offerHist.size()-noMoves; i < offerHist.size(); i++) {
+			for (int i = offerHist.size()-(int)noMoves; i < offerHist.size(); i++) {
 				if (offerHist.get(i-1).getMyUndiscountedUtil() != offerHist.get(i).getMyUndiscountedUtil() && !offerHist.get(i-1).getBid().equals(offerHist.get(i).getBid())){
 					isOpponentCooperative = false;
 					break;
@@ -236,18 +253,41 @@ public class Group4_OM extends OpponentModel {
 
 	public boolean getOpponentCooperative() { return isOpponentCooperative; }
 
-	private double getIssueTimeUtility(Issue issue) {
+	/**
+	 * Evaluation function to give time utility per issue value instead of general bids.
+	 * However, this sometimes fails, so it can switch to general bids if that happens.
+	 */
+	private double getIssueTimeUtility(Bid bid_1) {
+		List<Double> t = new ArrayList<>(Collections.nCopies(amountOfIssues+1, 0.0));
+		double closest_value = -1;
+		double closest_index = 0;
 		if (!offers.isEmpty()) {
-			for (Bid bid_2 : offers) {
-				bid_2.getValue(issue);
+			for (int i = offers.size() - 1; i > 0; i--) {
+				Bid bid_2 = offers.get(i);
+				// Time utility per issue
+				for (Issue j : issues) {
+					Value value1 = bid_1.getValue(j.getNumber());
+					Value value2 = bid_2.getValue(j.getNumber());
+					if (value1.equals(value2)) {
+						t.set(j.getNumber(), 1.0 - i / offers.size());
+					} else {
+						t.set(j.getNumber(), 0.0);
+					}
+				}
+				// Time utility per bid
+				double distance = bid_1.getDistance(bid_2);
+				if (distance < closest_value || closest_value == -1) {
+					closest_index = i;
+					closest_value = distance;
+				}
 			}
-			for (Bid bid_2 : offers) {
-				Value value1 = bid_2.getValue(issue);
-				Value value2 = bid_2.getValue(issue);
-				value1.equals(value2);
+			OptionalDouble average = t.stream().mapToDouble(a->a).average();
+			// Fallback to general bid
+			if (average.isPresent() && average.getAsDouble() == 0.0) {
+				return 1.0 - closest_index / offers.size();
 			}
+			return average.isPresent() ? average.getAsDouble(): 1.0;
 		}
-
-		return 0;
+		return 1.0;
 	}
 }
