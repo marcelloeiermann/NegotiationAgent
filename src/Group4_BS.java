@@ -146,11 +146,15 @@ public class Group4_BS extends OfferingStrategy {
              * The agent does not concede over time but concedes only at the end (configurable)
              * In addition the agent disappears towards the end in order to scare the opponent
              */
-
+            System.out.println("Offensive strategy");
             // Step 1: Check whether the agent should scare the opponent
             if (time >= scareThreshold) {
                 try {
-                    Thread.sleep(100);
+
+                    // Calculate how much time to sleep (50% of remaining time)
+                    double timeLeft = negotiationSession.getTimeline().getTotalTime() - negotiationSession.getTimeline().getCurrentTime();
+                    long timeToSleep = (long)(timeLeft * 1000 / 2);
+                    Thread.sleep(timeToSleep);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
