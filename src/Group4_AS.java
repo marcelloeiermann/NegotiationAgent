@@ -18,6 +18,7 @@ public class Group4_AS extends AcceptanceStrategy {
     private double b;
     private double t;
     private double c;
+    private double tt;
 
     /**
      * Empty constructor for the BOA framework.
@@ -26,13 +27,14 @@ public class Group4_AS extends AcceptanceStrategy {
     }
 
     public Group4_AS(NegotiationSession negoSession, OfferingStrategy strat,
-                     double alpha, double beta, double c, double tau) {
+                  double alpha, double beta, double c, double tau, double tt) {
         this.negotiationSession = negoSession;
         this.offeringStrategy = strat;
         this.a = alpha;
         this.b = beta;
         this.c = c;
         this.t = tau;
+        this.tt = tt;
 
     }
 
@@ -48,14 +50,17 @@ public class Group4_AS extends AcceptanceStrategy {
             b = parameters.get("b");
             c = parameters.get("c");
             t = parameters.get("t");
+            tt = parameters.get("tt");
+
         } else {
             a = 1.02;
             b = 0;
             c = 0.95;
             t = 0.99;
+            tt = 0.8;
+
 
         }
-        System.out.println("a = " + a);
 
     }
 
@@ -72,11 +77,8 @@ public class Group4_AS extends AcceptanceStrategy {
         double lastOpponentBidUtil = negotiationSession.getOpponentBidHistory()
                 .getLastBidDetails().getMyUndiscountedUtil();
         double maxBidUtil =  negotiationSession.getOpponentBidHistory().getBestBidDetails().getMyUndiscountedUtil();
-        System.out.println("1");
-        if ((a * lastOpponentBidUtil + b >= nextMyBidUtil) || ((negotiationSession.getTime() >= t) && ( lastOpponentBidUtil >= maxBidUtil * 0.9)) || (lastOpponentBidUtil >= c)) {
-            System.out.println("a = " + a);
-            System.out.println("t = " + t);
-
+        if ((a * lastOpponentBidUtil + b >= nextMyBidUtil) || ((negotiationSession.getTime() >= t)
+                && ( lastOpponentBidUtil >= maxBidUtil * 0.9)) || (lastOpponentBidUtil >= c)) {
             return Actions.Accept;
         }
         return Actions.Reject;
@@ -91,7 +93,10 @@ public class Group4_AS extends AcceptanceStrategy {
         set.add(new BOAparameter("b", 0.0,
                 "Accept when the opponent's utility * a + b is greater than the utility of our current bid"));
         set.add(new BOAparameter("t", 0.99,
-                "Accept when the passed time of the round is higher or equal to t"));
+                "Accept when the passed time of the round is higher or equal to t " +
+                        "(and bid is at least tt% of maximum given bid)"));
+        set.add(new BOAparameter("tt", 0.8,
+                "After t passed, accepts bid if it is at least tt% of maximum given bid"));
         set.add(new BOAparameter("c", 0.95,
                 "Accept when the opponent's utility is higher than c. (c should be set pretty high)"));
 
@@ -100,6 +105,6 @@ public class Group4_AS extends AcceptanceStrategy {
 
     @Override
     public String getName() {
-        return "Group4_Acceptance_Strategy_v6";
+        return "Group4_Acceptance_Strategy_v7";
     }
 }
