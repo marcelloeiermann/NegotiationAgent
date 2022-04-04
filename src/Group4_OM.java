@@ -37,6 +37,8 @@ public class Group4_OM extends OpponentModel {
 	private List<Bid> offers;
 	private List<Issue> issues;
 	private double profileDeterminationMoves;
+	private double frequencyWeight;
+	private double timeWeight;
 
 	@Override
 	public void init(NegotiationSession negotiationSession, Map<String, Double> parameters) {
@@ -53,7 +55,22 @@ public class Group4_OM extends OpponentModel {
 			} else {
 				profileDeterminationMoves = 4.0;
 			}
+			if (parameters.get("w_frequency") != null) {
+				frequencyWeight = parameters.get("w_frequency");
+			} else {
+				frequencyWeight = 0.5;
+			}
+			if (parameters.get("w_time") != null) {
+				timeWeight = parameters.get("w_time");
+			} else {
+				timeWeight = 0.5;
+			}
 		}
+		if (timeWeight + frequencyWeight != 1.0) {
+			timeWeight = 0.5;
+			frequencyWeight = 0.5;
+		}
+
 		learnValueAddition = 1;
 		opponentUtilitySpace = (AdditiveUtilitySpace) negotiationSession.getUtilitySpace().copy();
 		amountOfIssues = opponentUtilitySpace.getDomain().getIssues().size();
@@ -138,8 +155,8 @@ public class Group4_OM extends OpponentModel {
 			// Combine the frequency utility with the time utility
 			double freqUtil = opponentUtilitySpace.getUtility(bid);
 			double issueUtil = getIssueTimeUtility(bid);
-			System.out.println(offers.size() + " " + freqUtil + " " + issueUtil);
-			result = (freqUtil + issueUtil) / 2;
+			// System.out.println(offers.size() + " " + freqUtil + " " + issueUtil);
+			result = freqUtil * frequencyWeight + issueUtil * timeWeight;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -155,7 +172,9 @@ public class Group4_OM extends OpponentModel {
 	public Set<BOAparameter> getParameterSpec() {
 		Set<BOAparameter> set = new HashSet<BOAparameter>();
 		set.add(new BOAparameter("l", 0.2, "The learning coefficient determines how quickly the issue weights are learned"));
-		set.add(new BOAparameter("m", 4.0, "Checks after how many non-conceding opponent moves the modeler should consider the opponent as non-cooperative"));
+		set.add(new BOAparameter("m", 2.0, "Checks after how many non-conceding opponent moves the modeler should consider the opponent as non-cooperative"));
+		set.add(new BOAparameter("w_frequency", 0.5 , "Weight of the frequency model utility"));
+		set.add(new BOAparameter("w_time", 0.5 , "Weight of time model utility"));
 		return set;
 	}
 
@@ -211,27 +230,6 @@ public class Group4_OM extends OpponentModel {
 	}
 
 	/**
-	 * Determines the most similar previous bid and how recent that one was made.
-	 * Based on the recency it returns a value between 0 and 1 for the time utility.
-	 */
-	private double getTimeUtility(Bid bid_1) {
-		double closest_value = -1;
-		double closest_index = 0;
-		if (!offers.isEmpty()) {
-			for (int i = offers.size() - 1; i > 0; i--) {
-				Bid bid_2 = offers.get(i);
-				double distance = bid_1.getDistance(bid_2);
-				if (distance < closest_value || closest_value == -1) {
-					closest_index = i;
-					closest_value = distance;
-				}
-			}
-			return 1.0 - closest_index / offers.size();
-		}
-		return 1.0;
-	}
-
-	/**
 	 * Determines is the opponent is playing cooperative based on the amount of repeat offers.
 	 */
 	private void determineCooperative(double noMoves) {
@@ -270,7 +268,7 @@ public class Group4_OM extends OpponentModel {
 					Value value2 = bid_2.getValue(j.getNumber());
 					if (value1.equals(value2)) {
 						t.set(j.getNumber(), 1.0 - i / offers.size());
-					} else {
+					} else if (t.get(j.getNumber()) != 0.0) {
 						t.set(j.getNumber(), 0.0);
 					}
 				}
