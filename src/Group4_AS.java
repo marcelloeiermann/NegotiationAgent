@@ -44,7 +44,6 @@ public class Group4_AS extends AcceptanceStrategy {
             throws Exception {
         this.negotiationSession = negoSession;
         this.offeringStrategy = strat;
-        System.out.println("Init");
         if (parameters.get("a") != null || parameters.get("b") != null) {
             a = parameters.get("a");
             b = parameters.get("b");
@@ -70,12 +69,14 @@ public class Group4_AS extends AcceptanceStrategy {
         return str;
     }
 
+    //Determines if an opponents bid will be accepted based on the utility and time passed
     @Override
     public Actions determineAcceptability() {
         double nextMyBidUtil = offeringStrategy.getNextBid()
                 .getMyUndiscountedUtil();
         double lastOpponentBidUtil = negotiationSession.getOpponentBidHistory()
                 .getLastBidDetails().getMyUndiscountedUtil();
+        //Bid is accepted if one of three conditions apply (chapter 2.1 in report)
         double maxBidUtil =  negotiationSession.getOpponentBidHistory().getBestBidDetails().getMyUndiscountedUtil();
         if ((a * lastOpponentBidUtil + b >= nextMyBidUtil) || ((negotiationSession.getTime() >= t)
                 && ( lastOpponentBidUtil >= maxBidUtil * 0.9)) || (lastOpponentBidUtil >= c)) {
