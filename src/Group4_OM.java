@@ -12,33 +12,34 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * BOA framework implementation of the HardHeaded Frequecy Model.
+ * BOA framework implementation of the HardHeaded Frequency Model.
+ * Which is modified to take into account the time of offers.
  * 
- * Default: learning coef l = 0.2; learnValueAddition v = 1.0
+ * Default settings: l = 0.2; v = 1.0; m = 2.0; w_time = 0.5; w_frequency = 0.5
  * 
  * paper: https://ii.tudelft.nl/sites/default/files/boa.pdf
  */
 public class Group4_OM extends OpponentModel {
 
-	/*
-	 * the learning coefficient is the weight that is added each turn to the
-	 * issue weights which changed. It's a trade-off between concession speed
-	 * and accuracy.
-	 */
+	// The learning coefficient is the weight that is added each turn to the issue weights which changed.
+	// It's a trade-off between concession speed and accuracy.
 	private double learnCoef;
-	/*
-	 * value which is added to a value if it is found. Determines how fast the
-	 * value weights converge.
-	 */
+
+	// Value which is added to a value if it is found. Determines how fast the value weights converge.
 	private int learnValueAddition;
+
+	// Value which determines how lenient the offensive profile labeling is. Higher values are less lenient.
+	private double profileDeterminationMoves;
+
+	// The two parameters that determine the effect of both models.
+	private double frequencyWeight;
+	private double timeWeight;
+
 	private int amountOfIssues;
 	private double goldenValue;
 	private boolean isOpponentCooperative;
 	private List<Bid> offers;
 	private List<Issue> issues;
-	private double profileDeterminationMoves;
-	private double frequencyWeight;
-	private double timeWeight;
 
 	@Override
 	public void init(NegotiationSession negotiationSession, Map<String, Double> parameters) {
@@ -90,6 +91,7 @@ public class Group4_OM extends OpponentModel {
 
 	@Override
 	public void updateModel(Bid opponentBid, double time) {
+		// Store the opponent bid in a list of offers
 		offers.add(opponentBid);
 		if (negotiationSession.getOpponentBidHistory().size() < 2) {
 			return;
@@ -103,7 +105,7 @@ public class Group4_OM extends OpponentModel {
 				.get(negotiationSession.getOpponentBidHistory().size() - 2);
 		HashMap<Integer, Integer> lastDiffSet = determineDifference(prevOppBid, oppBid);
 
-		// count the number of changes in value
+		// Count the number of changes in value
 		for (Integer i : lastDiffSet.keySet()) {
 			if (lastDiffSet.get(i) == 0)
 				numberOfUnchanged++;
@@ -114,7 +116,7 @@ public class Group4_OM extends OpponentModel {
 		// The maximum possible weight
 		double maximumWeight = 1D - (amountOfIssues) * goldenValue / totalSum;
 
-		// re-weighing issues while making sure that the sum remains 1
+		// Re-weighing issues while making sure that the sum remains 1
 		for (Integer i : lastDiffSet.keySet()) {
 			Objective issue = opponentUtilitySpace.getDomain().getObjectivesRoot().getObjective(i);
 			double weight = opponentUtilitySpace.getWeight(i);
@@ -135,7 +137,7 @@ public class Group4_OM extends OpponentModel {
 				EvaluatorDiscrete value = (EvaluatorDiscrete) e.getValue();
 				IssueDiscrete issue = ((IssueDiscrete) e.getKey());
 				/*
-				 * add constant learnValueAddition to the current preference of
+				 * Add constant learnValueAddition to the current preference of
 				 * the value to make it more important
 				 */
 				ValueDiscrete issuevalue = (ValueDiscrete) oppBid.getBid().getValue(issue.getNumber());
@@ -155,7 +157,6 @@ public class Group4_OM extends OpponentModel {
 			// Combine the frequency utility with the time utility
 			double freqUtil = opponentUtilitySpace.getUtility(bid);
 			double issueUtil = getIssueTimeUtility(bid);
-			// System.out.println(offers.size() + " " + freqUtil + " " + issueUtil);
 			result = freqUtil * frequencyWeight + issueUtil * timeWeight;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -190,7 +191,7 @@ public class Group4_OM extends OpponentModel {
 			opponentUtilitySpace.unlock(e.getKey());
 			e.getValue().setWeight(commonWeight);
 			try {
-				// set all value weights to one (they are normalized when
+				// Set all value weights to one (they are normalized when
 				// calculating the utility)
 				for (ValueDiscrete vd : ((IssueDiscrete) e.getKey())
 						.getValues())
@@ -210,7 +211,7 @@ public class Group4_OM extends OpponentModel {
 	 *            bid of the opponent
 	 * @param second
 	 *            bid
-	 * @return
+	 * @return The difference between bids
 	 */
 	private HashMap<Integer, Integer> determineDifference(BidDetails first,
 			BidDetails second) {
@@ -241,6 +242,7 @@ public class Group4_OM extends OpponentModel {
 		isOpponentCooperative = true;
 		if (offerHist.size() > noMoves) {
 			for (int i = offerHist.size()-(int)noMoves; i < offerHist.size(); i++) {
+				// Check if offers are repeated
 				if (offerHist.get(i-1).getMyUndiscountedUtil() != offerHist.get(i).getMyUndiscountedUtil() && !offerHist.get(i-1).getBid().equals(offerHist.get(i).getBid())){
 					isOpponentCooperative = false;
 					break;
@@ -249,11 +251,16 @@ public class Group4_OM extends OpponentModel {
 		}
 	}
 
+	/**
+	 * @return If the opponent is cooperative
+	 */
 	public boolean getOpponentCooperative() { return isOpponentCooperative; }
 
 	/**
-	 * Evaluation function to give time utility per issue value instead of general bids.
-	 * However, this sometimes fails, so it can switch to general bids if that happens.
+	 * Evaluation function to give a time-based utility per issue value.
+	 * However, this sometimes fails, so it can switch to the closest general bid if that happens.
+	 *
+	 * @return Utility of the given bid
 	 */
 	private double getIssueTimeUtility(Bid bid_1) {
 		List<Double> t = new ArrayList<>(Collections.nCopies(amountOfIssues+1, 0.0));
@@ -262,25 +269,28 @@ public class Group4_OM extends OpponentModel {
 		if (!offers.isEmpty()) {
 			for (int i = offers.size() - 1; i > 0; i--) {
 				Bid bid_2 = offers.get(i);
-				// Time utility per issue
+				// Time utility per issue calculation
 				for (Issue j : issues) {
 					Value value1 = bid_1.getValue(j.getNumber());
 					Value value2 = bid_2.getValue(j.getNumber());
+					// As in the report, here "&& t.get(j.getNumber()) == 0.0" could be included
+					// Here the relative position of a bid is stored in the array
 					if (value1.equals(value2)) {
 						t.set(j.getNumber(), 1.0 - i / offers.size());
 					} else if (t.get(j.getNumber()) != 0.0) {
 						t.set(j.getNumber(), 0.0);
 					}
 				}
-				// Time utility per bid
+				// Time utility per bid calculation
 				double distance = bid_1.getDistance(bid_2);
 				if (distance < closest_value || closest_value == -1) {
 					closest_index = i;
 					closest_value = distance;
 				}
 			}
+			// Average the stored relative positions
 			OptionalDouble average = t.stream().mapToDouble(a->a).average();
-			// Fallback to general bid
+			// Fallback calculation to general bid utility
 			if (average.isPresent() && average.getAsDouble() == 0.0) {
 				return 1.0 - closest_index / offers.size();
 			}
